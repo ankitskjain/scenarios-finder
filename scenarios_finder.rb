@@ -1,105 +1,64 @@
 #!/usr/bin/env ruby
+
 files = Dir[ARGV[0] + '/cucumber/**/**/*.feature']
-tag = first_line_tags = ''
-total_scenarios = 0
-total_debug = total_automated = total_manual = total_todo = total_wip = 0
+
+tag = ''
+
+scenario = total_scenarios = total_debug = total_automated = total_manual = total_todo = total_wip = 0
+main_hash = Hash['@manual' => 0 , '@todo' => 0, '@debug' => 0, '@wip' => 0 ]
 files.each do |file|
   puts '<b>Reading ' + file + '</b>'
   first_line = File.open(file).first
+  hash = Hash['@manual' => 0 , '@todo' => 0, '@debug' => 0, '@wip' => 0 ]
+  first_line_tags = Array.new
+  prev_line = ''
   File.open(file, 'r') do |f|
-    smoke = debug = wip = todo = manual = scenario = 0
+    scenario = 0
     f.each_line do |line|
       scenario += 1 if line.include? 'Scenario'
-      smoke += 1 if line.include? '@smoke'
-      if first_line.include? '@manual'
-        tag = 'manual_tag'
-        first_line_tags = first_line
-        first_line = first_line.gsub('@manual', '')
-      elsif line.include? '@manual'
-        manual += 1
-      end
-
-      if first_line.include? '@wip'
-        tag = 'wip_tag'
-        first_line_tags = first_line
-        first_line = first_line.gsub('@wip', '')
-      elsif line.include? '@wip'
-        wip += 1
-      end
-
-      if first_line.include? '@todo'
-        tag = 'todo_tag'
-        first_line_tags = first_line
-        first_line = first_line.gsub('@todo', '')
-      elsif line.include? '@todo'
-        todo += 1
-      end
-
-      if first_line.include? '@debug'
-        tag = 'debug_tag'
-        first_line_tags = first_line
-        first_line = first_line.gsub('@debug', '')
-      elsif line.include? '@debug'
-        debug += 1
+      hash.each do |tag, value|
+        if first_line.include? tag
+          first_line_tags.insert(0,tag)
+          prev_line = first_line
+          #first_line = first_line.gsub(tag, '')
+        elsif line.include? tag
+          hash[tag] += 1
+        end
       end
     end
     total_scenarios += scenario
+    total_tag = 0
+    naya = 0
     puts '<p> Total number of scenarios in this feature file are : ' + scenario.to_s + '</p>'
-    if first_line_tags.include? '@'
-      puts '<p> ' + first_line_tags + ' tag is available at the top of the file </p>'
+    if prev_line != ''
+      puts '<p> Found ' + first_line_tags.first.to_s + ' tag at the top of the file </p>'
+      puts '<p> So in this feature file ' + scenario.to_s + ' ' + first_line_tags.first.to_s + ' scenario(s) </p>'
+      hash[first_line_tags.first.to_s] = scenario.to_s
+      puts hash
+      hash.each do |_k , v|
+        total_tag += v.to_i
+      end
     end
-    puts '<p>Which include ' + todo.to_s + ' todo scenario(s) </p>' if not tag.include? 'todo'
-    if tag.include? 'todo'
-      puts '<p>Which found ' + scenario.to_s + ' todo scenario(s) </p>'
-      todo = scenario
-      tag = ''
+    hash.delete(first_line_tags.first.to_s)
+    hash.each do |f_tag, f_value|
+      puts '<p>Which also include ' + f_value.to_s + ' ' + f_tag.to_s + ' scenario(s) </p>' if not hash.include? first_line_tags.first.to_s
     end
-
-    puts '<p> ' + wip.to_s + ' wip scenario(s) </p>' if not tag.include? 'wip'
-    if tag.include? 'wip'
-      puts '<p> ' + scenario.to_s + ' wip scenario(s) </p>' 
-      wip = scenario
-      tag = ''
-    end
-
-    puts '<p> ' + debug.to_s + ' debug scenario(s) </p>' if not tag.include? 'debug'
-    if tag.include? 'debug'
-      puts '<p> ' + scenario.to_s + ' debug scenario(s) </p>'
-      debug = scenario
-      tag = ''
-    end
-
-    puts '<p>And ' + manual.to_s + ' manual scenario(s) </p>' if not tag.include? 'manual'
-    if tag.include? 'manual'
-      puts '<p>And ' + scenario.to_s + ' manual scenario(s) </p>'
-      manual = scenario
-      tag = ''
-    end
-
-    automated = (scenario - (manual + wip + todo + debug))
-    if automated.to_s.include? '-'
+    if total_tag  > scenario
       puts '<p> <font size="3" color="red">More tags found than number of scenarios</font> </p>'
-      todo += automated and puts '<p> new count for todo tag is ' + todo.to_s + '</p>' if first_line_tags.include? 'todo'
-      wip += automated and puts '<p> new count for wip tag is ' + wip.to_s + '</p>' if first_line_tags.include? 'wip'
-      debug += automated and puts '<p> new count for debug tag is ' + debug.to_s + '</p>' if first_line_tags.include? 'debug'
-      manual += automated and puts '<p> new count for manual tag is ' + manual.to_s + '</p>' if first_line_tags.include? 'manual'
-      first_line_tags = ''
-      automated = 0
+      naya = total_tag - scenario
+      hash[first_line_tags.first.to_s] = (scenario - naya).to_s
+      puts '<p> So in this feature file ' + hash[first_line_tags.first.to_s] + ' ' + first_line_tags.first.to_s + ' scenario(s) </p>'
     end
-    total_automated += automated
-    puts '<p> Which results ' + automated.to_s + ' automated scenario(s) in this file </p>'
-
-    total_manual += manual
-    total_wip += wip
-    total_todo += todo
-    total_debug += debug
   end
+  main_hash.each do |final_tag, final_count|
+    main_hash[final_tag] += hash[final_tag].to_i
+  end
+  puts main_hash
 end
+
 puts '<h2>##### Final Report for ' + ARGV[0] + ' Repo ##### </h2>'
 puts '<p> Total number of feature files are ' + files.length.to_s + '</p>'
 puts '<p> Total Scenarios are ' + total_scenarios.to_s + '</p>'
-puts '<p> Total number of automated are ' + total_automated.to_s + '</p>'
-puts '<p> Total number of manual scenarios are ' + total_manual.to_s + '</p>'
-puts '<p> Total number of todo scenarios are ' + total_todo.to_s + '</p>'
-puts '<p> Total number of debug scenarios are ' + total_debug.to_s + '</p>'
-puts '<p> Total number of wip scenarios are ' + total_wip.to_s + '</p>'
+main_hash.each do |final_tags, final_counts|
+  puts '<p> Number of ' + final_tags + ' tags ' + final_counts.to_s + '</p>'
+end
