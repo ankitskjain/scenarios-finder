@@ -8,16 +8,21 @@ html_report = File.new("scenarios.html", "w+")
 
 tag = ''
 
+user = Array.new
+puts "Tags to be searched in comma separated format?"
+user = gets.chomp.split(",")
+main_hash = Hash[user.map {|x| [x, 0]}]
+
 scenario = total_scenarios = total_debug = total_automated = total_manual = total_todo = total_wip = 0
-main_hash = Hash['@manual' => 0 , '@todo' => 0, '@debug' => 0, '@wip' => 0 ]
-auto_hash = Hash['automated' => 0]
+auto_hash = Hash['automated' => '0']
+
 files.each do |file|
   # Taking each feature file
   html_report.puts '<b>Checking the feature file : ' + file.split('cucumber/').last + '</b>'
   # Reading first line of the feature file to check if we have given tags at the top
   first_line = File.open(file).first
   # Initializing variables
-  hash = Hash['@manual' => 0 , '@todo' => 0, '@debug' => 0, '@wip' => 0 ]
+  hash = Hash[user.map {|x| [x, 0]}]
   first_line_tags = Array.new
   prev_line = ''
   # Reading feature files
@@ -68,7 +73,7 @@ files.each do |file|
       not_automated += v.to_i
     end
     html_report.puts '<p> Total number of automated scenario(s) in this feature file are : ' + (scenario - not_automated).to_s + '</p>'
-    puts total_automated += (scenario - not_automated).to_i
+    total_automated += (scenario - not_automated).to_i
   end
   main_hash.each do |final_tag, final_count|
     main_hash[final_tag] += hash[final_tag].to_i
@@ -79,7 +84,6 @@ end
 html_report.puts '<h2>##### Final Report for ' + path.chomp + ' Repo ##### </h2>'
 html_report.puts '<p> Total number of feature files are ' + files.length.to_s + '</p>'
 html_report.puts '<p> Total Scenarios are ' + total_scenarios.to_s + '</p>'
-html_report.puts '<p> Total Automated Scenarios are ' + total_automated.to_s + '</p>'
 
 # puts main_hash # Uncomment if you need to debug the hash
 
@@ -87,4 +91,5 @@ main_hash.each do |final_tags, final_counts|
   html_report.puts '<p> Number of ' + final_tags + ' tags ' + final_counts.to_s + '</p>'
 end
 
-puts 'Your html report is generated with the name - scenarios.html'
+  html_report.puts '<p> Total automated Scenarios are ' + total_automated.to_s + '</p>'
+puts 'Your html report is generated, please run the command "open scenarios.html" to see the report.'
