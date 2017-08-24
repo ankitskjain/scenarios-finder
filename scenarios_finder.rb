@@ -9,7 +9,7 @@ html_report = File.new("scenarios.html", "w+")
 tag = ''
 
 user = Array.new
-puts "Tags to be searched in comma separated format?"
+puts "Provide the tags used for non automated tests in comma separated format"
 user = gets.chomp.split(",")
 main_hash = Hash[user.map {|x| [x, 0]}]
 
