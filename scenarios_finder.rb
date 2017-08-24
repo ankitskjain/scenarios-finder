@@ -91,5 +91,6 @@ main_hash.each do |final_tags, final_counts|
   html_report.puts '<p> Number of ' + final_tags + ' tags ' + final_counts.to_s + '</p>'
 end
 
-  html_report.puts '<p> Total automated Scenarios are ' + total_automated.to_s + '</p>'
+html_report.puts '<p> Total automated Scenarios are ' + total_automated.to_s + '</p>'
+html_report.puts '<p> Total automation coverage percent is : ' + ((total_automated.to_f/total_scenarios.to_f)*100).to_s + '</p>'
 puts 'Your html report is generated, please run the command "open scenarios.html" to see the report.'
